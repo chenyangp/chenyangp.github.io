@@ -1,0 +1,286 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>畅购第二天 | Gridea</title>
+<link rel="shortcut icon" href="https://chenyangp.github.io/favicon.ico?v=1605516743740">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://chenyangp.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="畅购第二天 | Gridea - Atom Feed" href="https://chenyangp.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1.跨域问题:
+产生的原因:浏览器同原策略,两者之间域名,协议,端口号三者有不同,叫跨域
+异步请求加载JSON数据会产生跨域问题.
+解决方法:CORS
+为浏览器请求头添加一个参数
+response.setHeader(&quot;Acces..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://chenyangp.github.io">
+  <img class="avatar" src="https://chenyangp.github.io/images/avatar.png?v=1605516743740" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              畅购第二天
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-14
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="1跨域问题">1.跨域问题:</h2>
+<p>产生的原因:浏览器同原策略,两者之间域名,协议,端口号三者有不同,叫跨域<br>
+异步请求加载JSON数据会产生跨域问题.<br>
+解决方法:CORS<br>
+为浏览器请求头添加一个参数<br>
+response.setHeader(&quot;Access-Control-Allow-Origin&quot;,&quot;请求url的相同域名来欺骗浏览器&quot;)<br>
+SpingMVC 4.2以上版本通过@CrossOrigin注解来实现这一方法,成功后,服务器会返回PreflightResponse;代表跨域请求成功<br>
+Cookie产生跨域问题<br>
+Spirng声明式事务中,默认只回滚RuntimeException</p>
+<h2 id="2-异常统一解决">2. 异常统一解决:</h2>
+<p>异常分为业务异常,和系统异常<br>
+一般编写一个统一异常处理类BasicExceptionHandler<br>
+添加@ControllerAdvice注解,以及方法添加@ExceptionHandler(value = Exception.class)注解<br>
+通过AOP的方法统一拦截异常,再分别解决;<br>
+业务异常:记录日志,落库数据库<br>
+系统异常,给予用户友好的提示<br>
+容易烦的错误:生吞异常导致事务失效</p>
+<pre><code class="language-JAVA">@Transactional
+public void add(User user){
+    try{
+          userMapper.insert(user)
+    } catch (Exception e){
+        throw new RuntimeException
+    }
+}
+</code></pre>
+<h2 id="3-需求规格参数商品分类">3. 需求:规格参数,商品分类</h2>
+<h3 id="1规格参数">1.规格参数</h3>
+<p>第一步 : 参考原型,找到需求所对应位置<br>
+第二部:看看数据中是否有对应表(三张表,tb template(模板表) tb_spec(规格表) tb_para(参数表))<br>
+第三步:研究表结构,表关系<br>
+模板表-&gt;规格表(1:n)<br>
+模板表-&gt;参数表(1:n)</p>
+<h3 id="2分类管理">2.分类管理</h3>
+<p>tb_category 分类表(树形结构表,parent_id,template_id)<br>
+模板表---&gt;分类表     (1:n)<br>
+分类表---&gt;品牌表     (m:n)</p>
+<h4 id="21-根据分类名查询品牌名">2.1 根据分类名查询品牌名</h4>
+<p>涉及到的表:tb_category(分类表),tb_category_brand(中间表),tb_brand(品牌表)<br>
+sql语句分析:</p>
+<p>三表相联系的点是tb_category(分类表),tb_brand(品牌表)的主键id通过tb_category_brand(中间表)相联系;<br>
+查询到brandName:SELECT b.name FROM tb_brand WHERE(条件);<br>
+分类名与中间表相联系:SELECT b.id FROM tb_category c ,tb_category_brand cd WHERE c.category_id = cd.id AND c.name = &quot;手机&quot;;<br>
+联想三表联系,得出条件应为id集合<br>
+SELECT b.name<br>
+FROM tb_brand b<br>
+WHERE b.id IN<br>
+(SELECT b.id FROM tb_category c ,tb_category_brand cd WHERE c.category_id = cd.id AND c.name = &quot;手机&quot;)</p>
+<h4 id="22-根据分类名查询规格">2.2 根据分类名查询规格</h4>
+<p>中间表为tb_template<br>
+select s.*  from tb_spec s where template_id in (select t.id from tb_category c, tb_template t where c.template_id = t.id and c.name = &quot;手机&quot;);</p>
+<h2 id="4-fastdfs-学习">4. FastDFS 学习</h2>
+<p>** 分布式文件系统FastDFS **<br>
+为什么要用FastDFS?<br>
+同类技术缺点</p>
+<pre><code>        该技术优点
+
+        项目实际
+        如何设置启动器,断点续传怎么解决(appender API 追加)
+   ** FastDFS 架构原理**
+        基本结构: C/S
+        文件上传
+        文件下载
+        文件存储
+
+   ** FastDFS 使用过程中问题?如何解决?**
+
+   ** 在那个业务使用**
+   ** 问题? 编码问题? 实际问题?**
+</code></pre>
+<p>FastDFS定位:分布式文件系统</p>
+<p>传统的文件存储:<br>
+1.存储在应用服务器(tomcat):<br>
+缺陷:功能耦合,拖慢应用程序<br>
+2.自己搭载文件服务器(基于nginx)<br>
+缺陷:自己维护图片服务器,提供对应文件操作API.技术难度大<br>
+3.线上云服务商问渐渐存储服务 [阿里云,腾讯云OOS]<br>
+缺陷: 大量文件存储需求,价格相当贵,数据不安全</p>
+<p>fastDFS:</p>
+<p>负载机制<br>
+<img src="https://chenyangp.github.io/post-images/1605409377244.png" alt="" loading="lazy"></p>
+<p>没有官方的springboot与fastDFS整合包,查找<br>
+gitee<br>
+github<br>
+maven仓库</p>
+<p>fastDFS架构为:<br>
+Tracker-cluster(追踪器集群),Storage-cluster(存储服务器集群),client(客户端)<br>
+由nginx负责Tracker-cluster的负载均衡,缓存等功能,Tracker-cluster各个Tracker server之间相互独立,不进行相互通信;<br>
+Storage-cluster由多个Storage-group组成,每个Storage-group之间相互独立,保存的数据是不相同的,但每个Storage-group中有多个Storage-server,这些Storage-server之间数据会互相备份,保存着相同的数据;<br>
+<img src="https://chenyangp.github.io/post-images/1605515641376.png" alt="" loading="lazy"><br>
+文件上传过程:<br>
+客户端首先请求nginx,nginx分配Tracker-server,来追踪比较空闲的Storage-group,并返回存储的storage-server的ip地址与端口号,client通过这个ip地址与端口号与storage-server建立链接,发送上传文件的请求,上传完成之后,storage-server会返回给client一个文件id;<br>
+例如group1/M00/00/00/wKhnd1wkvtOAPgd5AADmHHh3iFk538.jpg<br>
+代表分组/</p>
+<p>网关的应用<br>
+网关基础功能:路由,过滤<br>
+为什么使用网关?调用微服务时,可以通过网关进行一些基本的逻辑功能,例如日志,授权,登录,限流这些操作</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#1%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98">1.跨域问题:</a></li>
+<li><a href="#2-%E5%BC%82%E5%B8%B8%E7%BB%9F%E4%B8%80%E8%A7%A3%E5%86%B3">2. 异常统一解决:</a></li>
+<li><a href="#3-%E9%9C%80%E6%B1%82%E8%A7%84%E6%A0%BC%E5%8F%82%E6%95%B0%E5%95%86%E5%93%81%E5%88%86%E7%B1%BB">3. 需求:规格参数,商品分类</a>
+<ul>
+<li><a href="#1%E8%A7%84%E6%A0%BC%E5%8F%82%E6%95%B0">1.规格参数</a></li>
+<li><a href="#2%E5%88%86%E7%B1%BB%E7%AE%A1%E7%90%86">2.分类管理</a>
+<ul>
+<li><a href="#21-%E6%A0%B9%E6%8D%AE%E5%88%86%E7%B1%BB%E5%90%8D%E6%9F%A5%E8%AF%A2%E5%93%81%E7%89%8C%E5%90%8D">2.1 根据分类名查询品牌名</a></li>
+<li><a href="#22-%E6%A0%B9%E6%8D%AE%E5%88%86%E7%B1%BB%E5%90%8D%E6%9F%A5%E8%AF%A2%E8%A7%84%E6%A0%BC">2.2 根据分类名查询规格</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#4-fastdfs-%E5%AD%A6%E4%B9%A0">4. FastDFS 学习</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://chenyangp.github.io/post/springcloud-yu-springboot-ban-ben-pi-pei-wen-ti/">
+              <h3 class="post-title">
+                SpringCloud 与Springboot版本匹配问题
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://chenyangp.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

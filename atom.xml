@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://chenyangp.github.io</id>
     <title>Gridea</title>
-    <updated>2020-11-02T13:19:29.707Z</updated>
+    <updated>2020-11-16T08:52:38.352Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://chenyangp.github.io"/>
     <link rel="self" href="https://chenyangp.github.io/atom.xml"/>
@@ -10,6 +10,256 @@
     <logo>https://chenyangp.github.io/images/avatar.png</logo>
     <icon>https://chenyangp.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Gridea</rights>
+    <entry>
+        <title type="html"><![CDATA[畅购第二天]]></title>
+        <id>https://chenyangp.github.io/post/chang-gou-di-er-tian/</id>
+        <link href="https://chenyangp.github.io/post/chang-gou-di-er-tian/">
+        </link>
+        <updated>2020-11-14T01:52:40.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="1跨域问题">1.跨域问题:</h2>
+<p>产生的原因:浏览器同原策略,两者之间域名,协议,端口号三者有不同,叫跨域<br>
+异步请求加载JSON数据会产生跨域问题.<br>
+解决方法:CORS<br>
+为浏览器请求头添加一个参数<br>
+response.setHeader(&quot;Access-Control-Allow-Origin&quot;,&quot;请求url的相同域名来欺骗浏览器&quot;)<br>
+SpingMVC 4.2以上版本通过@CrossOrigin注解来实现这一方法,成功后,服务器会返回PreflightResponse;代表跨域请求成功<br>
+Cookie产生跨域问题<br>
+Spirng声明式事务中,默认只回滚RuntimeException</p>
+<h2 id="2-异常统一解决">2. 异常统一解决:</h2>
+<p>异常分为业务异常,和系统异常<br>
+一般编写一个统一异常处理类BasicExceptionHandler<br>
+添加@ControllerAdvice注解,以及方法添加@ExceptionHandler(value = Exception.class)注解<br>
+通过AOP的方法统一拦截异常,再分别解决;<br>
+业务异常:记录日志,落库数据库<br>
+系统异常,给予用户友好的提示<br>
+容易烦的错误:生吞异常导致事务失效</p>
+<pre><code class="language-JAVA">@Transactional
+public void add(User user){
+    try{
+          userMapper.insert(user)
+    } catch (Exception e){
+        throw new RuntimeException
+    }
+}
+</code></pre>
+<h2 id="3-需求规格参数商品分类">3. 需求:规格参数,商品分类</h2>
+<h3 id="1规格参数">1.规格参数</h3>
+<p>第一步 : 参考原型,找到需求所对应位置<br>
+第二部:看看数据中是否有对应表(三张表,tb template(模板表) tb_spec(规格表) tb_para(参数表))<br>
+第三步:研究表结构,表关系<br>
+模板表-&gt;规格表(1:n)<br>
+模板表-&gt;参数表(1:n)</p>
+<h3 id="2分类管理">2.分类管理</h3>
+<p>tb_category 分类表(树形结构表,parent_id,template_id)<br>
+模板表---&gt;分类表     (1:n)<br>
+分类表---&gt;品牌表     (m:n)</p>
+<h4 id="21-根据分类名查询品牌名">2.1 根据分类名查询品牌名</h4>
+<p>涉及到的表:tb_category(分类表),tb_category_brand(中间表),tb_brand(品牌表)<br>
+sql语句分析:</p>
+<p>三表相联系的点是tb_category(分类表),tb_brand(品牌表)的主键id通过tb_category_brand(中间表)相联系;<br>
+查询到brandName:SELECT b.name FROM tb_brand WHERE(条件);<br>
+分类名与中间表相联系:SELECT b.id FROM tb_category c ,tb_category_brand cd WHERE c.category_id = cd.id AND c.name = &quot;手机&quot;;<br>
+联想三表联系,得出条件应为id集合<br>
+SELECT b.name<br>
+FROM tb_brand b<br>
+WHERE b.id IN<br>
+(SELECT b.id FROM tb_category c ,tb_category_brand cd WHERE c.category_id = cd.id AND c.name = &quot;手机&quot;)</p>
+<h4 id="22-根据分类名查询规格">2.2 根据分类名查询规格</h4>
+<p>中间表为tb_template<br>
+select s.*  from tb_spec s where template_id in (select t.id from tb_category c, tb_template t where c.template_id = t.id and c.name = &quot;手机&quot;);</p>
+<h2 id="4-fastdfs-学习">4. FastDFS 学习</h2>
+<p>** 分布式文件系统FastDFS **<br>
+为什么要用FastDFS?<br>
+同类技术缺点</p>
+<pre><code>        该技术优点
+
+        项目实际
+        如何设置启动器,断点续传怎么解决(appender API 追加)
+   ** FastDFS 架构原理**
+        基本结构: C/S
+        文件上传
+        文件下载
+        文件存储
+
+   ** FastDFS 使用过程中问题?如何解决?**
+
+   ** 在那个业务使用**
+   ** 问题? 编码问题? 实际问题?**
+</code></pre>
+<p>FastDFS定位:分布式文件系统</p>
+<p>传统的文件存储:<br>
+1.存储在应用服务器(tomcat):<br>
+缺陷:功能耦合,拖慢应用程序<br>
+2.自己搭载文件服务器(基于nginx)<br>
+缺陷:自己维护图片服务器,提供对应文件操作API.技术难度大<br>
+3.线上云服务商问渐渐存储服务 [阿里云,腾讯云OOS]<br>
+缺陷: 大量文件存储需求,价格相当贵,数据不安全</p>
+<p>fastDFS:</p>
+<p>负载机制<br>
+<img src="https://chenyangp.github.io/post-images/1605409377244.png" alt="" loading="lazy"></p>
+<p>没有官方的springboot与fastDFS整合包,查找<br>
+gitee<br>
+github<br>
+maven仓库</p>
+<p>fastDFS架构为:<br>
+Tracker-cluster(追踪器集群),Storage-cluster(存储服务器集群),client(客户端)<br>
+由nginx负责Tracker-cluster的负载均衡,缓存等功能,Tracker-cluster各个Tracker server之间相互独立,不进行相互通信;<br>
+Storage-cluster由多个Storage-group组成,每个Storage-group之间相互独立,保存的数据是不相同的,但每个Storage-group中有多个Storage-server,这些Storage-server之间数据会互相备份,保存着相同的数据;<br>
+<img src="https://chenyangp.github.io/post-images/1605515641376.png" alt="" loading="lazy"><br>
+文件上传过程:<br>
+客户端首先请求nginx,nginx分配Tracker-server,来追踪比较空闲的Storage-group,并返回存储的storage-server的ip地址与端口号,client通过这个ip地址与端口号与storage-server建立链接,发送上传文件的请求,上传完成之后,storage-server会返回给client一个文件id;<br>
+例如group1/M00/00/00/wKhnd1wkvtOAPgd5AADmHHh3iFk538.jpg<br>
+代表分组/</p>
+<p>网关的应用<br>
+网关基础功能:路由,过滤<br>
+为什么使用网关?调用微服务时,可以通过网关进行一些基本的逻辑功能,例如日志,授权,登录,限流这些操作</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[SpringCloud 与Springboot版本匹配问题]]></title>
+        <id>https://chenyangp.github.io/post/springcloud-yu-springboot-ban-ben-pi-pei-wen-ti/</id>
+        <link href="https://chenyangp.github.io/post/springcloud-yu-springboot-ban-ben-pi-pei-wen-ti/">
+        </link>
+        <updated>2020-11-06T06:58:13.000Z</updated>
+        <content type="html"><![CDATA[<p><img src="https://chenyangp.github.io/post-images/1604645972861.png" alt="" loading="lazy"><br>
+报了&quot;Message: Error creating bean with name 'traceFilterRegistration' defined in class path resource&quot; 错误;因为SpringCloud 与Springboot有版本匹配问题;<br>
+<img src="https://chenyangp.github.io/post-images/1604646163204.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[AOP学习]]></title>
+        <id>https://chenyangp.github.io/post/aop-xue-xi/</id>
+        <link href="https://chenyangp.github.io/post/aop-xue-xi/">
+        </link>
+        <updated>2020-11-03T10:35:28.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="一概念">一.概念</h2>
+<p>AOP(Aspect Oriented Programing),面向切面编程.就是把代码中共性的内容抽取出来,形成独立的部分(通知),运行的时候再通过在被提取代码的方法(切入点)织入共性内容(通知)形成切面,再通过代理对象来实现功能;</p>
+<h2 id="二aop纯注解实现缓存基于springboot">二.AOP纯注解实现缓存(基于SpringBoot)</h2>
+<p><strong>需求:</strong><br>
+每次调用addUser接口时,使用Redis缓存User数据,<br>
+每次查询User数据时,先从Redis中获取,没有再查询数据库<br>
+<strong>1.导入依赖</strong></p>
+<pre><code class="language-JAVA"> &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-aop&lt;/artifactId&gt;
+ &lt;/dependency&gt;
+</code></pre>
+<p><strong>2.配置</strong><br>
+2.1 配置开启AOP自动代理:</p>
+<pre><code> 两种方法,第一种是在配置文件中配置:aop.auto = true;第二种在启动类,加入
+ @EnableAspectJAutoProxy注解
+</code></pre>
+<p>2.2 配置注解扫描路径:</p>
+<pre><code> 在启动类配置@ComponentScan(连接点所在包的全路径);
+ (springboot自动扫描配置modulename包下的所有子包),可以不配置这一项
+</code></pre>
+<p>2.3 创建一个注解接口:</p>
+<pre><code class="language-JAVA">@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+@Documented
+public @interface CacheAnnotation {
+    public String value() default &quot;&quot;;
+}
+</code></pre>
+<p>2.4 书写缓存接口,Redis工具实现类,并通过注解加入Spring IOC 容器中</p>
+<pre><code class="language-JAVA">public interface Cache {
+    public void set(String key,String value);
+    public String get(String key);
+}
+</code></pre>
+<pre><code class="language-JAVA">@Component
+public class RedisCache implements Cache {
+    private StringRedisTemplate redisTemplate;
+    @Override
+    public void set(String key, String value) {
+        redisTemplate.boundValueOps(key).set(value);
+    }
+    @Override
+    public String get(String key) {
+        String value = redisTemplate.boundValueOps(key).get();
+        return value;
+    }
+}
+</code></pre>
+<p>2.5 业务层,连接点中切入点接口,与实现类</p>
+<pre><code class="language-JAVA">public interface UserService {
+//开启切入点注解,如若使用的是JDK动态代理模式,
+//即proxy-target-class=&quot;false&quot;,
+//由于JDK代理的对象需要实现一个接口，因此jdk动态代理的方式只要代理了那个接口，然后所有实现该接口的类都会被代理。
+//所以该注解需要配置在接口方法上;
+    @CacheAnnotation
+    public Map addUser(User user);
+}
+</code></pre>
+<pre><code class="language-JAVA">@Service
+public class UserServiceImpl implements UserService{
+
+    @Autowired
+    private UserMapper userMapper;
+
+    /**
+     * 添加User
+     * @param user
+     */
+    @Override
+    @Transactional
+    //如若使用的是CGLIB动态代理模式,
+    //即配置proxy-target-class=&quot;true&quot;,
+    //CGLIB动态代理比较自由,可以直接代理类,此处使用的是JDK代理,这里注释掉
+    //@CacheAnnotation
+    public Map addUser(User user) {
+        //判断user是否为空
+        Optional&lt;User&gt; optional = Optional.ofNullable(user);
+        if(!optional.isPresent()){
+            throw new NullPointerException(&quot;user为null&quot;);
+        }
+        //不为空的条件下,调用持久层进行添加
+        Map result = new HashMap();
+        try {
+            user.setCreateTime(new Date());
+            user.setUpdateTime(new Date());
+            userMapper.addUser(user);
+            result.put(&quot;message&quot;, &quot;添加成功!&quot;);
+        }catch(Exception e){
+            result.put(&quot;message&quot;,&quot;添加失败!&quot;);
+        }
+        return result;
+    }
+}
+</code></pre>
+<p>2.6 书写通知类,实现Redis缓存</p>
+<pre><code class="language-JAVA">@Aspect
+@Component
+public class CacheAspect {
+
+    @Autowired
+    private Cache cache;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    /**
+     * 切入点,监控业务层接口
+     */
+    @Pointcut(&quot;@annotation(com.bisdonut.cachedemo.aop.annotation.CacheAnnotation)&quot;)
+    public void pointcut(){
+    }
+    /**
+     *通知
+     * @param joinPoint 封装了SpringAop中切面方法的信息
+     */
+    @AfterReturning(pointcut = &quot;pointcut()&quot;)
+    public void SetUser(JoinPoint joinPoint) throws JsonProcessingException {
+        //获得切面方法的参数
+        Object[] args = joinPoint.getArgs();
+        User user = (User) args[0];
+        String s = objectMapper.writeValueAsString(user);
+        System.out.println(s);
+        cache.set(user.getId().toString(),s);
+    }
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Hello Gridea]]></title>
         <id>https://chenyangp.github.io/post/hello-gridea/</id>

@@ -1,0 +1,299 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AOP学习 | Gridea</title>
+<link rel="shortcut icon" href="https://chenyangp.github.io/favicon.ico?v=1605516743740">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://chenyangp.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="AOP学习 | Gridea - Atom Feed" href="https://chenyangp.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="一.概念
+AOP(Aspect Oriented Programing),面向切面编程.就是把代码中共性的内容抽取出来,形成独立的部分(通知),运行的时候再通过在被提取代码的方法(切入点)织入共性内容(通知)形成切面,再通过代理对象来实现功..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://chenyangp.github.io">
+  <img class="avatar" src="https://chenyangp.github.io/images/avatar.png?v=1605516743740" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              AOP学习
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-11-03
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="一概念">一.概念</h2>
+<p>AOP(Aspect Oriented Programing),面向切面编程.就是把代码中共性的内容抽取出来,形成独立的部分(通知),运行的时候再通过在被提取代码的方法(切入点)织入共性内容(通知)形成切面,再通过代理对象来实现功能;</p>
+<h2 id="二aop纯注解实现缓存基于springboot">二.AOP纯注解实现缓存(基于SpringBoot)</h2>
+<p><strong>需求:</strong><br>
+每次调用addUser接口时,使用Redis缓存User数据,<br>
+每次查询User数据时,先从Redis中获取,没有再查询数据库<br>
+<strong>1.导入依赖</strong></p>
+<pre><code class="language-JAVA"> &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-aop&lt;/artifactId&gt;
+ &lt;/dependency&gt;
+</code></pre>
+<p><strong>2.配置</strong><br>
+2.1 配置开启AOP自动代理:</p>
+<pre><code> 两种方法,第一种是在配置文件中配置:aop.auto = true;第二种在启动类,加入
+ @EnableAspectJAutoProxy注解
+</code></pre>
+<p>2.2 配置注解扫描路径:</p>
+<pre><code> 在启动类配置@ComponentScan(连接点所在包的全路径);
+ (springboot自动扫描配置modulename包下的所有子包),可以不配置这一项
+</code></pre>
+<p>2.3 创建一个注解接口:</p>
+<pre><code class="language-JAVA">@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+@Documented
+public @interface CacheAnnotation {
+    public String value() default &quot;&quot;;
+}
+</code></pre>
+<p>2.4 书写缓存接口,Redis工具实现类,并通过注解加入Spring IOC 容器中</p>
+<pre><code class="language-JAVA">public interface Cache {
+    public void set(String key,String value);
+    public String get(String key);
+}
+</code></pre>
+<pre><code class="language-JAVA">@Component
+public class RedisCache implements Cache {
+    private StringRedisTemplate redisTemplate;
+    @Override
+    public void set(String key, String value) {
+        redisTemplate.boundValueOps(key).set(value);
+    }
+    @Override
+    public String get(String key) {
+        String value = redisTemplate.boundValueOps(key).get();
+        return value;
+    }
+}
+</code></pre>
+<p>2.5 业务层,连接点中切入点接口,与实现类</p>
+<pre><code class="language-JAVA">public interface UserService {
+//开启切入点注解,如若使用的是JDK动态代理模式,
+//即proxy-target-class=&quot;false&quot;,
+//由于JDK代理的对象需要实现一个接口，因此jdk动态代理的方式只要代理了那个接口，然后所有实现该接口的类都会被代理。
+//所以该注解需要配置在接口方法上;
+    @CacheAnnotation
+    public Map addUser(User user);
+}
+</code></pre>
+<pre><code class="language-JAVA">@Service
+public class UserServiceImpl implements UserService{
+
+    @Autowired
+    private UserMapper userMapper;
+
+    /**
+     * 添加User
+     * @param user
+     */
+    @Override
+    @Transactional
+    //如若使用的是CGLIB动态代理模式,
+    //即配置proxy-target-class=&quot;true&quot;,
+    //CGLIB动态代理比较自由,可以直接代理类,此处使用的是JDK代理,这里注释掉
+    //@CacheAnnotation
+    public Map addUser(User user) {
+        //判断user是否为空
+        Optional&lt;User&gt; optional = Optional.ofNullable(user);
+        if(!optional.isPresent()){
+            throw new NullPointerException(&quot;user为null&quot;);
+        }
+        //不为空的条件下,调用持久层进行添加
+        Map result = new HashMap();
+        try {
+            user.setCreateTime(new Date());
+            user.setUpdateTime(new Date());
+            userMapper.addUser(user);
+            result.put(&quot;message&quot;, &quot;添加成功!&quot;);
+        }catch(Exception e){
+            result.put(&quot;message&quot;,&quot;添加失败!&quot;);
+        }
+        return result;
+    }
+}
+</code></pre>
+<p>2.6 书写通知类,实现Redis缓存</p>
+<pre><code class="language-JAVA">@Aspect
+@Component
+public class CacheAspect {
+
+    @Autowired
+    private Cache cache;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    /**
+     * 切入点,监控业务层接口
+     */
+    @Pointcut(&quot;@annotation(com.bisdonut.cachedemo.aop.annotation.CacheAnnotation)&quot;)
+    public void pointcut(){
+    }
+    /**
+     *通知
+     * @param joinPoint 封装了SpringAop中切面方法的信息
+     */
+    @AfterReturning(pointcut = &quot;pointcut()&quot;)
+    public void SetUser(JoinPoint joinPoint) throws JsonProcessingException {
+        //获得切面方法的参数
+        Object[] args = joinPoint.getArgs();
+        User user = (User) args[0];
+        String s = objectMapper.writeValueAsString(user);
+        System.out.println(s);
+        cache.set(user.getId().toString(),s);
+    }
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E4%B8%80%E6%A6%82%E5%BF%B5">一.概念</a></li>
+<li><a href="#%E4%BA%8Caop%E7%BA%AF%E6%B3%A8%E8%A7%A3%E5%AE%9E%E7%8E%B0%E7%BC%93%E5%AD%98%E5%9F%BA%E4%BA%8Espringboot">二.AOP纯注解实现缓存(基于SpringBoot)</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://chenyangp.github.io/post/hello-gridea/">
+              <h3 class="post-title">
+                Hello Gridea
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://chenyangp.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
