@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://chenyangp.github.io</id>
     <title>Gridea</title>
-    <updated>2020-11-16T08:52:38.352Z</updated>
+    <updated>2020-11-20T03:04:34.813Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://chenyangp.github.io"/>
     <link rel="self" href="https://chenyangp.github.io/atom.xml"/>
@@ -82,7 +82,7 @@ select s.*  from tb_spec s where template_id in (select t.id from tb_category c,
         文件存储
 
    ** FastDFS 使用过程中问题?如何解决?**
-
+        
    ** 在那个业务使用**
    ** 问题? 编码问题? 实际问题?**
 </code></pre>
@@ -107,9 +107,15 @@ Tracker-cluster(追踪器集群),Storage-cluster(存储服务器集群),client(�
 Storage-cluster由多个Storage-group组成,每个Storage-group之间相互独立,保存的数据是不相同的,但每个Storage-group中有多个Storage-server,这些Storage-server之间数据会互相备份,保存着相同的数据;<br>
 <img src="https://chenyangp.github.io/post-images/1605515641376.png" alt="" loading="lazy"><br>
 文件上传过程:<br>
-客户端首先请求nginx,nginx分配Tracker-server,来追踪比较空闲的Storage-group,并返回存储的storage-server的ip地址与端口号,client通过这个ip地址与端口号与storage-server建立链接,发送上传文件的请求,上传完成之后,storage-server会返回给client一个文件id;<br>
+客户端首先请求Tracker-server,来追踪比较空闲的Storage-group,并返回存储的storage-server的ip地址与端口号,client通过这个ip地址与端口号与storage-server建立链接,发送上传文件的请求,上传完成之后,storage-server会返回给client一个文件id;<br>
 例如group1/M00/00/00/wKhnd1wkvtOAPgd5AADmHHh3iFk538.jpg<br>
-代表分组/</p>
+文件名由group、存储目录、两级子目录、fileid、文件后缀名（由客户端指定，主要用于区分文件类型）拼接而成。<br>
+<img src="https://chenyangp.github.io/post-images/1605529674046.png" alt="" loading="lazy"><br>
+文件下载过程<br>
+客户端带上文件名信息请求Tracker-server,tracker从文件名中解析出文件的group,大小,创建时间等信息,为请求选择一个storage用来服务读请求,</p>
+<p>来获取建立链接的storage-server的ip,端口号,凭借两者与起建立链接,进行文件下载.<br>
+<img src="https://chenyangp.github.io/post-images/1605529679031.jpg" alt="" loading="lazy"><br>
+文件存储过程</p>
 <p>网关的应用<br>
 网关基础功能:路由,过滤<br>
 为什么使用网关?调用微服务时,可以通过网关进行一些基本的逻辑功能,例如日志,授权,登录,限流这些操作</p>
